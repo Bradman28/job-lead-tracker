@@ -1,0 +1,34 @@
+.table > tbody > tr.last-viewed > * {
+    background-color: #d8ebff !important;
+}
+
+.table-hover > tbody > tr.last-viewed:hover > * {
+    background-color: #d8ebff !important;
+}
+
+table .form-select {
+    min-width: 75px;
+}
+
+body {
+    background-color: #f5f6f8;
+}
+
+.company-tile {
+    cursor: pointer;
+}
+
+.status-column {
+    width: 110px;
+}
+
+.company-link {
+    color: #212529;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.company-link:hover {
+    color: #495057;
+    text-decoration: underline;
+}

@@ -1,0 +1,22 @@
+# virtual environment
+.venv/
+
+#Python cache
+__pycache__/
+*.py[cod]
+
+# mac os
+.DS_Store
+
+# google API credentials
+credentials/
+token.json
+
+# local SQLite database
+jobs.db
+
+# generated data
+data/
+
+# jobs backup
+backups/

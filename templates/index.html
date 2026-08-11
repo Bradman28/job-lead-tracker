@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Tracker</title>
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+    <link 
+        rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"
+    >
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                Job Tracker
+            </a>
+
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto">
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('index') }}">
+                            Jobs
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('companies') }}">
+                            Companies
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link disabled" href="#">
+                            Analytics
+                        </a>
+                    </li>
+
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+
+    <main class="container-fluid py-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+            <h2 class="h5 card_title mb-3">Filters</h2>
+                <form method="GET" action="/">
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-12 col-md-6 col-lg">
+                            <label for="alert_name">Alert:</label>
+                            <select name="alert_name" id="alert_name" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Alerts</option>
+
+                                {% for alert in alert_names %}
+                                    <option
+                                        value="{{alert['alert_name'] }}"
+                                        {% if alert['alert_name'] == selected_alert %}selected{% endif %}
+                                    >
+                                            {{ alert["alert_name"] }}  
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg">
+                            <label for="interested">Interested:</label>
+                            <select name="interested" id="interested" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                <option value="Yes" {% if selected_interested == "Yes" %}selected{% endif %}>Yes</option>
+                                <option value="Blank" {% if selected_interested == "Blank" %}selected{% endif %}>Not Reviewed</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg">
+                            <label for="applied">Applied:</label>
+                            <select name="applied" id="applied" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                <option value="Yes" {% if selected_applied == "Yes" %}selected{% endif %}>Yes</option>
+                                <option value="No" {% if selected_applied == "No" %}selected{% endif %}>No</option>
+                                <option value="Blank" {% if selected_applied == "Blank" %}selected{% endif %}>Not Reviewed</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg">
+                            <label for="company">Company:</label>
+                            <select name="company" id="company" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+                                {% for company in companies %}
+                                    <option
+                                        value="{{company['company'] }}"
+                                        {% if company['company'] == selected_company %}selected{% endif %}
+                                    >
+                                            {{ company["company"] }}  
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg">
+                            <label for="location">Location:</label>
+                            <select name="location" id="location" class="form-select" onchange="this.form.submit()">
+                                <option value="">All</option>
+
+                                {% for location in locations %}
+                                    <option
+                                        value="{{location['location'] }}"
+                                        {% if location['location'] == selected_location %}selected{% endif %}
+                                    >
+                                            {{ location["location"] }}  
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
+                                Clear Filters
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <form
+                        id="bulk-update-form"
+                        action="{{ url_for('bulk_update_interested') }}"
+                        method="POST"
+                    >
+                    
+                        <input type="hidden" name="alert_name" value="{{ selected_alert }}">
+                        <input type="hidden" name="page" value="{{ page }}">
+
+                        <label for="bulk_interested">Set Interested:</label>
+
+                        <select name="bulk_interested" id="bulk_interested">
+                            <option value="">Choose...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                            <option value="Clear">Clear</option>
+                        </select>
+
+                        <button type="submit">Update Selected</button>
+
+                    </form>
+
+                    <form
+                        action="{{ url_for('archive_reviewed') }}"
+                        method="POST"
+                        onsubmit="return confirm('Archive all active jobs marked No or Closed?');"
+                    >
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            Archive Not Interested or Closed
+                        </button>
+                    </form>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center my-3">
+                    <div>
+                        <span class="text-muted">
+                            Showing {{ jobs|length }} of {{ total_jobs }} jobs
+                        </span>
+                    </div>
+
+                    <span class="text-muted">
+                        Page {{ page }} of {{ total_pages }}
+                    </span>
+                </div>
+
+                <nav
+                    class="d-flex justify-content-center mb-4"
+                    aria-label="Job pagination"
+                >
+                    <ul class="pagination pagination-sm mb-0">
+
+                        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                            <a
+                                class="page-link"
+                                href="{{ url_for(
+                                    'index',
+                                    page=1,
+                                    alert_name=selected_alert,
+                                    interested=selected_interested,
+                                    applied=selected_applied,
+                                    company=selected_company,
+                                    location=selected_location
+                                ) }}"
+                            >
+                                First
+                            </a>
+                        </li>
+
+                        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                            <a
+                                class="page-link"
+                                href="{{ url_for(
+                                    'index',
+                                    page=page - 1,
+                                    alert_name=selected_alert,
+                                    interested=selected_interested,
+                                    applied=selected_applied,
+                                    company=selected_company,
+                                    location=selected_location
+                                ) }}"
+                            >
+                                Previous
+                            </a>
+                        </li>
+
+                        {% set start_page = [1, page - 2]|max %}
+                        {% set end_page = [total_pages, page + 2]|min %}
+
+                        {% for page_number in range(start_page, end_page + 1) %}
+                            <li class="page-item {% if page_number == page %}active{% endif %}">
+                                <a
+                                    class="page-link"
+                                    href="{{ url_for(
+                                        'index',
+                                        page=page_number,
+                                        alert_name=selected_alert,
+                                        interested=selected_interested,
+                                        applied=selected_applied,
+                                        company=selected_company,
+                                        location=selected_location
+                                    ) }}"
+                                >
+                                    {{ page_number }}
+                                </a>
+                            </li>
+                        {% endfor %}
+
+                        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                            <a
+                                class="page-link"
+                                href="{{ url_for(
+                                    'index',
+                                    page=page + 1,
+                                    alert_name=selected_alert,
+                                    interested=selected_interested,
+                                    applied=selected_applied,
+                                    company=selected_company,
+                                    location=selected_location
+                                ) }}"
+                            >
+                                Next
+                            </a>
+                        </li>
+
+                        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                            <a
+                                class="page-link"
+                                href="{{ url_for(
+                                    'index',
+                                    page=total_pages,
+                                    alert_name=selected_alert,
+                                    interested=selected_interested,
+                                    applied=selected_applied,
+                                    company=selected_company,
+                                    location=selected_location
+                                ) }}"
+                            >
+                                Last
+                            </a>
+                        </li>
+
+                    </ul>
+                </nav>
+
+                <div class="table-responsive">
+                    <table class=" table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all">
+                                </th>
+                                <th class="text-nowrap" >Date Added</th>
+                                <th class="status-column">Status</th>
+                                <th>Interested</th>
+                                <th>Applied</th>
+                                <th>Interview</th>
+                                <th class="text-nowrap" >Alert Name</th>
+                                <th>Job Title</th>
+                                <th>Company</th>
+                                <th>Location</th>
+                                <th>Job Link</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for job in jobs %}
+                            <tr id="job-{{ job['id'] }}">
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        name="selected_jobs"
+                                        value="{{ job['id'] }}"
+                                        class="job-checkbox"
+                                        form="bulk-update-form">
+                                </td>
+                                <td>{{ job["date_added"] }}</td>
+                                <td>
+                                    <form action="{{ url_for('update_posting_status', job_id=job['id']) }}" method="POST">
+                                        <input type="hidden" name="alert_name" value="{{ selected_alert }}">
+                                        <input type="hidden" name="page" value="{{ page }}">
+                                        <select name="posting_status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="Open"
+                                                {% if job["posting_status"] == "Open" %}selected{% endif %}>
+                                                Open
+                                            </option>
+                                            <option value="Closed"
+                                                {% if job["posting_status"] == "Closed" %}selected{% endif %}>
+                                                Closed
+                                            </option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('update_interested', job_id=job['id']) }}" method="POST">
+                                        <input type="hidden" name="alert_name" value="{{ selected_alert }}">
+                                        <input type="hidden" name="page" value="{{ page }}">
+                                        <select name="interested" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value=""
+                                                {% if not job["interested"] %}selected{% endif %}>
+                                            </option>
+                                            <option value="Yes"
+                                                {% if job["interested"] == "Yes" %}selected{% endif %}>
+                                                Yes
+                                            </option>
+                                            <option value="No"
+                                                {% if job["interested"] == "No" %}selected{% endif %}>
+                                                No
+                                            </option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('update_applied', job_id=job['id']) }}" method="POST">
+                                        <input type="hidden" name="alert_name" value="{{ selected_alert }}">
+                                        <input type="hidden" name="page" value="{{ page }}">
+                                        <select name="applied" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value=""
+                                                {% if not job["applied"] %}selected{% endif %}>
+                                            </option>
+                                            <option value="Yes"
+                                                {% if job["applied"] == "Yes" %}selected{% endif %}>
+                                                Yes
+                                            </option>
+                                            <option value="No"
+                                                {% if job["applied"] == "No" %}selected{% endif %}>
+                                                No
+                                            </option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('update_interview', job_id=job['id']) }}" method="POST">
+                                        <input type="hidden" name="alert_name" value="{{ selected_alert }}">
+                                        <input type="hidden" name="page" value="{{ page }}">
+                                        <select name="interview" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value=""
+                                                {% if not job["interview"] %}selected{% endif %}>
+                                            </option>
+                                            <option value="Yes"
+                                                {% if job["interview"] == "Yes" %}selected{% endif %}>
+                                                Yes
+                                            </option>
+                                            <option value="No"
+                                                {% if job["interview"] == "No" %}selected{% endif %}>
+                                                No
+                                            </option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>{{ job["alert_name"] }}</td>
+                                <td>{{ job["job_title"] }}</td>
+                                <td>{{ job["company"] }}</td>
+                                <td>{{ job["location"] }}</td>
+                                <td>
+                                    <a href="{{ job['job_link'] }}" class="job-link" data-job-id="{{ job['id'] }}" target="_blank">
+                                        {{ job["job_title"] }}
+                                    </a> 
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <nav
+            class="d-flex justify-content-center mt-4"
+            aria-label="Job pagination"
+        >
+            <ul class="pagination pagination-sm mb-0">
+
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a
+                        class="page-link"
+                        href="{{ url_for(
+                            'index',
+                            page=1,
+                            alert_name=selected_alert,
+                            interested=selected_interested,
+                            applied=selected_applied,
+                            company=selected_company,
+                            location=selected_location
+                        ) }}"
+                    >
+                        First
+                    </a>
+                </li>
+
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a
+                        class="page-link"
+                        href="{{ url_for(
+                            'index',
+                            page=page - 1,
+                            alert_name=selected_alert,
+                            interested=selected_interested,
+                            applied=selected_applied,
+                            company=selected_company,
+                            location=selected_location
+                        ) }}"
+                    >
+                        Previous
+                    </a>
+                </li>
+
+                {% set start_page = [1, page - 2]|max %}
+                {% set end_page = [total_pages, page + 2]|min %}
+
+                {% for page_number in range(start_page, end_page + 1) %}
+                    <li class="page-item {% if page_number == page %}active{% endif %}">
+                        <a
+                            class="page-link"
+                            href="{{ url_for(
+                                'index',
+                                page=page_number,
+                                alert_name=selected_alert,
+                                interested=selected_interested,
+                                applied=selected_applied,
+                                company=selected_company,
+                                location=selected_location
+                            ) }}"
+                        >
+                            {{ page_number }}
+                        </a>
+                    </li>
+                {% endfor %}
+
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a
+                        class="page-link"
+                        href="{{ url_for(
+                            'index',
+                            page=page + 1,
+                            alert_name=selected_alert,
+                            interested=selected_interested,
+                            applied=selected_applied,
+                            company=selected_company,
+                            location=selected_location
+                        ) }}"
+                    >
+                        Next
+                    </a>
+                </li>
+
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a
+                        class="page-link"
+                        href="{{ url_for(
+                            'index',
+                            page=total_pages,
+                            alert_name=selected_alert,
+                            interested=selected_interested,
+                            applied=selected_applied,
+                            company=selected_company,
+                            location=selected_location
+                        ) }}"
+                    >
+                        Last
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        ></script>
+        <script src="{{ url_for('static', filename='js/script.js')}}"></script>
+    </main>
+</body>
+</html>
