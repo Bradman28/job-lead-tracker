@@ -20,3 +20,6 @@ data/
 
 # jobs backup
 backups/
+
+# local publishing helper
+publish_public.sh

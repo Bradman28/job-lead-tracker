@@ -68,3 +68,91 @@ document.querySelectorAll(".page-link").forEach(link => {
         sessionStorage.setItem("paginationClicked", "true")
     });
 });
+
+const alertChart = document.getElementById("alertInterestChart");
+
+if (alertChart && window.alertStats) {
+
+    Chart.register(ChartDataLabels);
+
+    const alertLabels = window.alertStats.map(
+        alert => alert.alert_name
+    );
+
+    const alertRates = window.alertStats.map(
+        alert => alert.interested_rate
+    );
+
+    const alertInterested = window.alertStats.map(
+        alert => alert.interested_jobs
+    );
+
+    const alertReviewed = window.alertStats.map(
+        alert => alert.reviewed_jobs
+    );
+
+    new Chart(alertChart, {
+        type: "bar",
+
+        data: {
+            labels: alertLabels,
+
+            datasets: [{
+                label: "Interest Rate",
+                data: alertRates
+            }]
+        },
+
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    suggestedMax: 30,
+
+                    grid: {
+                        display: false
+                    },
+
+                    ticks: {
+                        callback: function(value) {
+                            return value + "%";
+                        }
+                    }
+                }
+            },
+
+            plugins: {
+                legend: {
+                    display: false
+                },
+
+                datalabels: {
+                    anchor: "end",
+                    align: "end",
+
+                    formatter: function(value) {
+                        return value + "%";
+                    }
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const index = context.dataIndex;
+
+                            return [
+                                "Interest Rate: " + alertRates[index] + "%",
+                                "Interested Jobs: " + alertInterested[index],
+                                "Reviewed Jobs: " + alertReviewed[index]
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+}

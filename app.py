@@ -460,5 +460,123 @@ def toggle_company_favorite(company_id):
 
     return redirect(url_for("companies"))
 
+@app.route("/analytics")
+def analytics():
+
+    conn = sqlite3.connect("jobs.db")
+    conn.row_factory = sqlite3.Row
+
+    # CTE for % of jobs interested of total jobs reviewed
+    job_stats = conn.execute("""
+        WITH job_stats AS (
+            SELECT
+
+                COUNT (*) AS total_jobs,
+
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS interested_jobs,
+
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                    THEN 1 
+                    ELSE 0
+                    END 
+                ) AS reviewed_jobs,
+
+                SUM(
+                    CASE
+                        WHEN applied = 'Yes'   
+                        THEN 1
+                        ELSE 0
+                    END 
+                ) AS applied_jobs,
+
+                SUM(
+                    CASE
+                        WHEN interview = 'Yes'   
+                        THEN 1
+                        ELSE 0
+                    END 
+                ) AS interviewed_jobs
+
+            FROM jobs
+        )
+
+        SELECT
+            interested_jobs,
+            reviewed_jobs,
+            applied_jobs,
+            total_jobs,
+            interviewed_jobs,
+            ROUND(
+                interested_jobs * 100.0 / reviewed_jobs,
+                1
+            ) AS interested_rate,
+            ROUND(
+                applied_jobs * 100.0 / interested_jobs,
+                1
+            ) AS applied_rate,
+            ROUND(
+                interviewed_jobs * 100.0 / applied_jobs,
+                1
+            ) AS interviewed_rate
+        FROM job_stats;
+    """).fetchone()
+
+    alert_stats = conn.execute("""
+        WITH alert_stats AS (
+            SELECT
+                alert_name,
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS interested_jobs,
+                
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                    THEN 1 
+                    ELSE 0
+                    END 
+                ) AS reviewed_jobs
+            FROM jobs
+            WHERE alert_name IS NOT NULL
+                AND alert_name != ''
+            GROUP BY alert_name
+        )
+
+        SELECT
+            alert_name,
+            interested_jobs,
+            reviewed_jobs,
+            ROUND(
+                interested_jobs * 100.0 / reviewed_jobs,
+                1
+            ) AS interested_rate
+        FROM alert_stats
+        ORDER BY interested_rate DESC;
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "analytics.html",
+        job_stats=job_stats,
+        alert_stats=alert_stats
+    )
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
