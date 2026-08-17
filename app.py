@@ -531,6 +531,7 @@ def analytics():
         FROM job_stats;
     """).fetchone()
 
+    # CTE for interested jobs % by alert type
     alert_stats = conn.execute("""
         WITH alert_stats AS (
             SELECT
@@ -555,6 +556,7 @@ def analytics():
             FROM jobs
             WHERE alert_name IS NOT NULL
                 AND alert_name != ''
+                AND alert_name != 'Python'
             GROUP BY alert_name
         )
 
@@ -570,12 +572,160 @@ def analytics():
         ORDER BY interested_rate DESC;
     """).fetchall()
 
+    # CTE for closed % of jobs by alert type
+    closed_stats = conn.execute("""
+        WITH closed_stats AS (
+            SELECT
+                alert_name,
+                SUM(
+                    CASE
+                        WHEN posting_status = 'Closed'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS closed_jobs,
+                    
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                        THEN 1 
+                        ELSE 0
+                        END 
+                ) AS reviewed_jobs
+            FROM jobs
+            WHERE date_added >= '2026-08-07'
+                AND alert_name IS NOT NULL
+                AND alert_name != ''
+                AND alert_name != 'Python'
+            GROUP BY alert_name
+        )
+    
+        SELECT
+            alert_name,
+            closed_jobs,
+            reviewed_jobs,
+            ROUND(
+                closed_jobs * 100.0 / reviewed_jobs,
+                1
+            ) AS closed_rate
+        FROM closed_stats
+        ORDER BY closed_rate DESC;
+    """).fetchall()
+
+    # CTE for top 10 number of closed jobs by company
+    company_closed_stats = conn.execute("""
+        WITH company_closed_stats AS (
+            SELECT
+                company,
+                SUM(
+                    CASE
+                        WHEN posting_status = 'Closed'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS closed_jobs,
+                    
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                        THEN 1 
+                        ELSE 0
+                        END 
+                ) AS reviewed_jobs
+            FROM jobs
+            WHERE date_added >= '2026-08-07'
+                AND company IS NOT NULL
+                AND company != ''
+            GROUP BY company
+        )
+    
+        SELECT
+            company,
+            closed_jobs
+        FROM company_closed_stats
+        ORDER BY closed_jobs DESC
+        LIMIT 10;
+    """).fetchall()
+
+    # CTE for top 10 number of interested jobs by company
+    company_interested_stats = conn.execute("""
+        WITH company_interested_stats AS (
+            SELECT
+                company,
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'
+                        THEN 1
+                        ELSE 0
+                    END
+                ) AS interested_jobs,
+                    
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                        THEN 1 
+                        ELSE 0
+                        END 
+                ) AS reviewed_jobs
+            FROM jobs
+            WHERE company IS NOT NULL
+                AND company != ''
+            GROUP BY company
+        )
+    
+        SELECT
+            company,
+            interested_jobs
+        FROM company_interested_stats
+        ORDER BY interested_jobs DESC
+        LIMIT 10;
+    """).fetchall()
+
+    # jobs reviewed per week
+    jobs_by_week = conn.execute("""
+        WITH jobs_by_week AS (
+            SELECT
+                date (
+                    date_added,
+                    '-' || ((strftime('%w', date_added) + 6) % 7) || ' days'
+                ) AS week_start,
+
+                SUM(
+                    CASE
+                        WHEN interested = 'Yes'   
+                            OR interested = 'No'
+                            OR posting_status = 'Closed' 
+                        THEN 1 
+                        ELSE 0
+                        END 
+                ) AS reviewed_jobs
+
+            FROM jobs
+            GROUP BY week_start
+    )
+        SELECT
+            reviewed_jobs,
+            week_start
+        FROM jobs_by_week
+        ORDER BY week_start;
+    """).fetchall()
+
     conn.close()
 
     return render_template(
         "analytics.html",
         job_stats=job_stats,
-        alert_stats=alert_stats
+        alert_stats=alert_stats,
+        closed_stats=closed_stats,
+        company_closed_stats=company_closed_stats,
+        company_interested_stats=company_interested_stats,
+        jobs_by_week=jobs_by_week
     )
 
 if __name__ == "__main__":
